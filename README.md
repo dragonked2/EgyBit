@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.png" alt="Bitcoin Logo" width="150">
+  <img src="logo.png" alt="Bitcoin Logo" width="550">
 </p>
 
 # Bitcoin Address Generator
