@@ -7,9 +7,9 @@ import sys
 import logging
 
 class BitcoinAddressGenerator:
-    def __init__(self):
+    def __init__(self, addresses_file):
         self.existing_addresses = set()
-        self.addresses_file = "b.txt"
+        self.addresses_file = addresses_file
         self.new_data_file = "Matched_Bitcoin_data.txt"
         self.setup_existing_addresses()
 
@@ -59,12 +59,12 @@ class BitcoinAddressGenerator:
             if bitcoin_address in self.existing_addresses:
                 print("Match found! Bitcoin Address:", bitcoin_address)
                 self.save_data_to_file(private_key, public_key, bitcoin_address)
-            else:
-                print("Generated Bitcoin Address:", bitcoin_address)
 
-if __name__ == "__main__":
+def main():
     logging.basicConfig(level=logging.INFO)
-    generator = BitcoinAddressGenerator()
+    
+    addresses_file = "Bitcoin_addresses_LATEST.txt"
+    generator = BitcoinAddressGenerator(addresses_file)
 
     def cleanup():
         logging.info("Cleaning up before exit...")
@@ -83,3 +83,6 @@ if __name__ == "__main__":
         generator.main_loop()
     except KeyboardInterrupt:
         logging.info("Script stopped by user.")
+
+if __name__ == "__main__":
+    main()
