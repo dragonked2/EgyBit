@@ -7,9 +7,9 @@ import sys
 import logging
 
 class BitcoinAddressGenerator:
-    def __init__(self, addresses_file):
+    def __init__(self):
         self.existing_addresses = set()
-        self.addresses_file = addresses_file
+        self.addresses_file = "b.txt"
         self.new_data_file = "Matched_Bitcoin_data.txt"
         self.setup_existing_addresses()
 
@@ -31,12 +31,11 @@ class BitcoinAddressGenerator:
         sha256_hash = hashlib.sha256(public_key_bytes).digest()
         ripemd160_hash = hashlib.new('ripemd160', sha256_hash).digest()
 
-        network_byte = b'\x00'  
+        network_byte = b'\x00'
         extended_ripemd160_hash = network_byte + ripemd160_hash
         checksum = hashlib.sha256(hashlib.sha256(extended_ripemd160_hash).digest()).digest()[:4]
 
         bitcoin_address = base58.b58encode(extended_ripemd160_hash + checksum).decode('utf-8')
-
         return bitcoin_address
 
     def save_data_to_file(self, private_key, public_key, address):
@@ -53,21 +52,33 @@ class BitcoinAddressGenerator:
         return private_key.to_string().hex(), public_key.to_string().hex(), bitcoin_address
 
     def main_loop(self):
+        generated_count = 0
+        match_count = 0
+
+        print("Loaded", len(self.existing_addresses), "addresses from", self.addresses_file)
+        
         while True:
             private_key, public_key, bitcoin_address = self.generate_bitcoin_address()
+            generated_count += 1
 
             if bitcoin_address in self.existing_addresses:
-                print("Match found! Bitcoin Address:", bitcoin_address)
+                match_count += 1
+                print(f"Match found! Bitcoin Address: {bitcoin_address}")
                 self.save_data_to_file(private_key, public_key, bitcoin_address)
+            else:
+                print(f"Generated Bitcoin Address ({generated_count} total): {bitcoin_address}")
+            
+            if generated_count % 1000 == 0:
+                print(f"Generated {generated_count} addresses, {match_count} matches")
 
-def main():
+if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    
-    addresses_file = "Bitcoin_addresses_LATEST.txt"
-    generator = BitcoinAddressGenerator(addresses_file)
+    generator = BitcoinAddressGenerator()
 
     def cleanup():
         logging.info("Cleaning up before exit...")
+        # Perform cleanup tasks here
+
     atexit.register(cleanup)
 
     def signal_handler(sig, frame):
@@ -81,6 +92,3 @@ def main():
         generator.main_loop()
     except KeyboardInterrupt:
         logging.info("Script stopped by user.")
-
-if __name__ == "__main__":
-    main()
