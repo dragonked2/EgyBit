@@ -31,7 +31,7 @@ class BitcoinAddressGenerator:
         sha256_hash = hashlib.sha256(public_key_bytes).digest()
         ripemd160_hash = hashlib.new('ripemd160', sha256_hash).digest()
 
-        network_byte = b'\x00'  # Mainnet
+        network_byte = b'\x00'  
         extended_ripemd160_hash = network_byte + ripemd160_hash
         checksum = hashlib.sha256(hashlib.sha256(extended_ripemd160_hash).digest()).digest()[:4]
 
@@ -68,8 +68,6 @@ def main():
 
     def cleanup():
         logging.info("Cleaning up before exit...")
-        # Perform cleanup tasks here
-
     atexit.register(cleanup)
 
     def signal_handler(sig, frame):
