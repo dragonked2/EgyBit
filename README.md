@@ -33,8 +33,8 @@ This Python script empowers you to create Bitcoin addresses effortlessly using E
 1. **Clone the Repository:**
 
    ```sh
-   git clone https://github.com/dragonked2/bitcoin.git
-   cd bitcoin
+   git clone https://github.com/dragonked2/EgyBit.git
+   cd EgyBit
 
     Install Dependencies:
 
@@ -65,7 +65,7 @@ Disclaimer
 Warning: This script is for educational and demonstration purposes only. Please use it responsibly and ethically. We do not endorse or encourage any illegal or harmful activities.
 Contact
 
-Have questions or need assistance? Feel free to reach out at or0to@yahoo.com
+Have questions or need assistance? Feel free to reach out!
 <p align="center">
   <a href="https://github.com/dragonked2">
     <img src="https://img.shields.io/badge/github-dragonked2-blueviolet?style=flat-square&logo=github" alt="GitHub">
@@ -75,5 +75,3 @@ Have questions or need assistance? Feel free to reach out at or0to@yahoo.com
   </a>
 </p>
 ```
-
-This version of the README.md includes additional sections like "Table of Contents," "Getting Started," and "Contact." It also incorporates badges for GitHub and email contact information. Feel free to further customize and enhance the README to make it even more appealing and informative for potential users and contributors.
