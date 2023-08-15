@@ -1,94 +1,51 @@
 import ecdsa
+import os
 import hashlib
 import base58
-import signal
-import atexit
-import sys
-import logging
+from bitcoin import *
 
-class BitcoinAddressGenerator:
-    def __init__(self):
-        self.existing_addresses = set()
-        self.addresses_file = "b.txt"
-        self.new_data_file = "Matched_Bitcoin_data.txt"
-        self.setup_existing_addresses()
+def generate_and_check(private_key, existing_addresses, total_generated):
+    signing_key = ecdsa.SigningKey.from_string(private_key, curve=ecdsa.SECP256k1)
+    verifying_key = signing_key.get_verifying_key()
+    public_key = b"\x04" + verifying_key.to_string()
+    sha256_hash = hashlib.sha256(public_key).digest()
+    address_hash = hashlib.sha256(sha256_hash).hexdigest()
 
-    def setup_existing_addresses(self):
-        try:
-            with open(self.addresses_file, 'r') as file:
-                self.existing_addresses = set(line.strip() for line in file)
-        except FileNotFoundError:
-            pass
+    ripemd160_hash = hashlib.new("ripemd160", sha256_hash).digest()
+    bitcoin_address = base58.b58encode_check(b"\x00" + ripemd160_hash).decode()
+    
+    # Calculate Wallet Import Format (WIF) manually
+    version = b'\x80'  # Mainnet private key prefix
+    private_key_bytes = private_key
+    extended_key = version + private_key_bytes
+    checksum = hashlib.sha256(hashlib.sha256(extended_key).digest()).digest()[:4]
+    wif = base58.b58encode(extended_key + checksum).decode()
 
-    def generate_private_key(self):
-        return ecdsa.SigningKey.generate(curve=ecdsa.SECP256k1)
+    status = "Generated Bitcoin Address: {}".format(bitcoin_address)
+    if bitcoin_address in existing_addresses:
+        status += " (Match found!)"
 
-    def derive_public_key(self, private_key):
-        return private_key.get_verifying_key()
+        with open('bito.txt', 'a') as match_file:
+            match_file.write("Private Key (Hex): {}\n".format(private_key.hex()))
+            match_file.write("Bitcoin Address: {}\n".format(bitcoin_address))
+            match_file.write("WIF: {}\n".format(wif))
+            match_file.write("\n")
 
-    def calculate_bitcoin_address(self, public_key):
-        public_key_bytes = public_key.to_string()
-        sha256_hash = hashlib.sha256(public_key_bytes).digest()
-        ripemd160_hash = hashlib.new('ripemd160', sha256_hash).digest()
+    print(status)
+    print("Total Addresses Generated:", total_generated)
 
-        network_byte = b'\x00'
-        extended_ripemd160_hash = network_byte + ripemd160_hash
-        checksum = hashlib.sha256(hashlib.sha256(extended_ripemd160_hash).digest()).digest()[:4]
+def main():
+    with open('output1.txt', 'r') as file:
+        existing_addresses = [line.strip() for line in file]
 
-        bitcoin_address = base58.b58encode(extended_ripemd160_hash + checksum).decode('utf-8')
-        return bitcoin_address
+    total_generated = 0
 
-    def save_data_to_file(self, private_key, public_key, address):
-        with open(self.new_data_file, 'a') as file:
-            file.write(f"Private Key: {private_key}\n")
-            file.write(f"Public Key: {public_key}\n")
-            file.write(f"Bitcoin Address: {address}\n")
-            file.write("=" * 40 + "\n")
+    while True:
+        private_key = os.urandom(32)
+        generate_and_check(private_key, existing_addresses, total_generated)
+        total_generated += 1
 
-    def generate_bitcoin_address(self):
-        private_key = self.generate_private_key()
-        public_key = self.derive_public_key(private_key)
-        bitcoin_address = self.calculate_bitcoin_address(public_key)
-        return private_key.to_string().hex(), public_key.to_string().hex(), bitcoin_address
 
-    def main_loop(self):
-        generated_count = 0
-        match_count = 0
-
-        print("Loaded", len(self.existing_addresses), "addresses from", self.addresses_file)
-        
-        while True:
-            private_key, public_key, bitcoin_address = self.generate_bitcoin_address()
-            generated_count += 1
-
-            if bitcoin_address in self.existing_addresses:
-                match_count += 1
-                print(f"Match found! Bitcoin Address: {bitcoin_address}")
-                self.save_data_to_file(private_key, public_key, bitcoin_address)
-            else:
-                print(f"Generated Bitcoin Address ({generated_count} total): {bitcoin_address}")
-            
-            if generated_count % 1000 == 0:
-                print(f"Generated {generated_count} addresses, {match_count} matches")
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    generator = BitcoinAddressGenerator()
-
-    def cleanup():
-        logging.info("Cleaning up before exit...")
-        # Perform cleanup tasks here
-
-    atexit.register(cleanup)
-
-    def signal_handler(sig, frame):
-        logging.info(f"Received signal {sig}. Exiting gracefully...")
-        sys.exit(0)
-
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-
-    try:
-        generator.main_loop()
-    except KeyboardInterrupt:
-        logging.info("Script stopped by user.")
+    main()
