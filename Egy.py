@@ -1,7 +1,6 @@
 import ecdsa
 import hashlib
 import base58
-import concurrent.futures
 import secrets
 from bitcoin import *
 
@@ -34,12 +33,9 @@ def main():
     with open('output1.txt', 'r') as file:
         existing_addresses = {line.strip() for line in file}
 
-    num_threads = 2
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
-        while True:
-            private_key = secrets.token_bytes(32)
-            executor.submit(generate_and_check, private_key, existing_addresses)
+    while True:
+        private_key = secrets.token_bytes(32)
+        generate_and_check(private_key, existing_addresses)
 
 
 if __name__ == "__main__":
