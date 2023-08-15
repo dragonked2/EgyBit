@@ -34,7 +34,7 @@ def main():
     with open('output1.txt', 'r') as file:
         existing_addresses = {line.strip() for line in file}
 
-    num_threads = 3
+    num_threads = 2
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
         while True:
