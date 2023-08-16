@@ -1,48 +1,44 @@
-import ecdsa
-import hashlib
-import base58
-import secrets
-import re
-import concurrent.futures
-vanity_pattern = re.compile(r"1Ali")
+import bitcoin
+from bitcoin import privtopub, pubtoaddr, encode_privkey
+import signal
 
-def generate_address(signing_key):
-    verifying_key = signing_key.get_verifying_key()
-    public_key = b"\x04" + verifying_key.to_string()
-    sha256_hash = hashlib.sha256(public_key).digest()
-    ripemd160_hash = hashlib.new("ripemd160", sha256_hash).digest()
-    bitcoin_address = base58.b58encode_check(b"\x00" + ripemd160_hash).decode()
-    return bitcoin_address
+exit_flag = False
 
-def main():
-    vanity_pattern = "1Ali" 
-    with open('bito.txt', 'r') as file:
-        existing_addresses = {line.strip() for line in file}
+def save_to_file(file, private_key_hex, private_key_wif, bitcoin_address):
+    file.write("Private Key (Hex): " + private_key_hex + "\n")
+    file.write("Private Key (WIF): " + private_key_wif + "\n")
+    file.write("Bitcoin Address: " + bitcoin_address + "\n")
+    file.write("\n")
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        while True:
-            private_key = secrets.token_bytes(32)
-            signing_key = ecdsa.SigningKey.from_string(private_key, curve=ecdsa.SECP256k1)
-            bitcoin_address = generate_address(signing_key)
+def check_for_match(address, addresses_to_match):
+    return address in addresses_to_match
 
-            if re.match(vanity_pattern, bitcoin_address):
-                wif = base58.b58encode_check(b"\x80" + private_key).decode()
-                match_info = (
-                    "Private Key (Hex): {}\n".format(private_key.hex()),
-                    "Bitcoin Address: {}\n".format(bitcoin_address),
-                    "WIF: {}\n".format(wif),
-                    "\n"
-                )
-
-                with open('matches.txt', 'a') as matches_file:
-                    matches_file.writelines(match_info)
-                    matches_file.flush()
-
-                print("Generated Vanity Bitcoin Address: {} (Match found!)".format(bitcoin_address))
-            elif bitcoin_address in existing_addresses:
-                print("Generated Bitcoin Address: {} (Match found in existing addresses)".format(bitcoin_address))
-            else:
-                print("Generated Bitcoin Address:", bitcoin_address)
+def process_addresses(addresses_to_match, output_file):
+    while not exit_flag:
+        private_key_hex = bitcoin.random_key()
+        private_key_wif = encode_privkey(private_key_hex, 'wif')
+        public_key_hex = privtopub(private_key_hex)
+        bitcoin_address = pubtoaddr(public_key_hex)
+        
+        print("Private Key (Hex):", private_key_hex)
+        print("Private Key (WIF):", private_key_wif)
+        print("Bitcoin Address:", bitcoin_address)
+        
+        if check_for_match(bitcoin_address, addresses_to_match):
+            save_to_file(output_file, private_key_hex, private_key_wif, bitcoin_address)
+            print("Data saved to bitcoin_addresses.txt")
 
 if __name__ == "__main__":
-    main()
+    with open("filter.txt", "r") as file:
+        addresses_to_match = set(file.read().splitlines())
+
+    def signal_handler(sig, frame):
+        global exit_flag
+        exit_flag = True
+        print("Ctrl+C detected. Exiting gracefully...")
+    signal.signal(signal.SIGINT, signal_handler)
+
+    with open("bitcoin_addresses.txt", "a") as output_file:
+        process_addresses(addresses_to_match, output_file)
+
+    print("Script has been gracefully terminated.")
