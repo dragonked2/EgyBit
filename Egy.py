@@ -32,7 +32,7 @@ def generate_and_check(private_key, existing_addresses, vanity_pattern=None):
         print("Generated Bitcoin Address:", bitcoin_address)
 
 def main():
-    vanity_pattern = "1Ali"  # Specify your desired vanity pattern here
+    vanity_pattern = "1Ali" 
     with open('bito.txt', 'r') as file:
         existing_addresses = {line.strip() for line in file}
 
